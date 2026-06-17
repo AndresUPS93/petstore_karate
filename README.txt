@@ -21,10 +21,11 @@ Casos de prueba implementados:
   PRE-REQUISITOS
 ===============================================================
 
-1. Java JDK 21 o superior  *** IMPORTANTE: Karate v2 requiere Java 21+ ***
+1. Java JDK 17 o superior  *** IMPORTANTE: el pom.xml ya incluye los flags JVM necesarios ***
    - Verificar: java -version
    - Descargar: https://adoptium.net/
-   - NOTA: Java 26 es compatible. Java 11/17 NO son compatibles con Karate v2.
+   - NOTA: Java 17, 21 y 26 son compatibles. El pom.xml incluye --add-opens y
+     --add-exports para que GraalVM/Karate funcione correctamente en Java 17+.
 
 2. Apache Maven 3.6 o superior
    - Verificar: mvn -version
@@ -118,7 +119,7 @@ Paso 4: Ver el reporte HTML generado
   TECNOLOGÍAS UTILIZADAS
 ===============================================================
 
-  - Karate DSL 2.0.9  → Framework de pruebas API (io.karatelabs, Java 21+)
+  - Karate DSL 1.5.2  → Framework de pruebas API (io.karatelabs, Java 17+)
   - JUnit 5           → Motor de ejecución de tests
   - Apache Maven      → Gestión de dependencias y build
   - Java 11           → Lenguaje base

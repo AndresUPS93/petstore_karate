@@ -10,18 +10,20 @@
     <packaging>jar</packaging>
 
     <name>Petstore Karate API Tests</name>
-    <description>Pruebas automatizadas de la API Petstore usando Karate DSL v2</description>
+    <description>Pruebas automatizadas de la API Petstore usando Karate DSL</description>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- Karate v2 requiere Java 21+ y usa nuevo groupId io.karatelabs -->
-        <karate.version>2.0.9</karate.version>
+        <!--
+            io.karatelabs:karate-junit5:1.5.2 es la última versión estable en Maven Central.
+            Requiere los flags de JVM para funcionar con Java 17+ (GraalVM Polyglot).
+        -->
+        <karate.version>1.5.2</karate.version>
     </properties>
 
     <dependencies>
-        <!-- Karate v2 con soporte nativo Java 21+ -->
         <dependency>
             <groupId>io.karatelabs</groupId>
             <artifactId>karate-junit5</artifactId>
@@ -43,20 +45,36 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.1.2</version>
+                <version>3.5.2</version>
                 <configuration>
                     <includes>
                         <include>**/*Runner.java</include>
                     </includes>
+                    <!--
+                        Flags obligatorios para Java 17+ con Karate/GraalVM Polyglot.
+                        Sin estos flags, GraalVM no puede inicializar el engine JS
+                        porque requiere acceso a APIs internas de la JVM.
+                        Ref: https://github.com/karatelabs/karate/issues/2542
+                    -->
+                    <argLine>
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.nio=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED
+                        --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                        --add-exports java.base/sun.misc=ALL-UNNAMED
+                        --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+                        -Dfile.encoding=UTF-8
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.13.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>17</source>
+                    <target>17</target>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
         </plugins>
