@@ -21,9 +21,10 @@ Casos de prueba implementados:
   PRE-REQUISITOS
 ===============================================================
 
-1. Java JDK 11 o superior
+1. Java JDK 21 o superior  *** IMPORTANTE: Karate v2 requiere Java 21+ ***
    - Verificar: java -version
    - Descargar: https://adoptium.net/
+   - NOTA: Java 26 es compatible. Java 11/17 NO son compatibles con Karate v2.
 
 2. Apache Maven 3.6 o superior
    - Verificar: mvn -version
@@ -117,7 +118,7 @@ Paso 4: Ver el reporte HTML generado
   TECNOLOGÍAS UTILIZADAS
 ===============================================================
 
-  - Karate DSL 1.4.1  → Framework de pruebas API
+  - Karate DSL 2.0.9  → Framework de pruebas API (io.karatelabs, Java 21+)
   - JUnit 5           → Motor de ejecución de tests
   - Apache Maven      → Gestión de dependencias y build
   - Java 11           → Lenguaje base
