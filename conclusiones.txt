@@ -1,0 +1,148 @@
+===============================================================
+  CONCLUSIONES Y HALLAZGOS - EJERCICIO 2
+  API PetStore - Pruebas de Servicios REST con Karate DSL
+  Fecha: 2026-06-17
+===============================================================
+
+1. RESUMEN EJECUTIVO
+--------------------
+Se implementaron pruebas automatizadas sobre la API pública de PetStore
+(https://petstore.swagger.io/v2) cubriendo el ciclo de vida completo de
+un usuario: creación, consulta, actualización, verificación y eliminación.
+Se ejecutaron 6 escenarios de prueba con resultado esperado: PASS en todos.
+
+
+2. HALLAZGOS TÉCNICOS DE LA API
+---------------------------------
+
+HALLAZGO 1 - Respuesta de POST /user no retorna el objeto creado:
+  El endpoint POST /user retorna una respuesta genérica:
+    { "code": 200, "type": "unknown", "message": "999001" }
+  En lugar del objeto usuario completo. Esto impide validar los datos
+  ingresados directamente desde la respuesta de creación. Se debe hacer
+  un GET posterior para confirmar la creación (buena práctica de todas formas).
+
+HALLAZGO 2 - La API no valida formato de email:
+  Se probó ingresar valores inválidos en el campo "email" y la API los acepta
+  sin retornar error de validación. Esto representa un defecto de validación
+  de entrada en el lado del servidor (falta de validación de esquema).
+
+HALLAZGO 3 - El campo "id" puede ser sobreescrito libremente:
+  No existe control de unicidad en el campo "id". Se puede crear múltiples
+  usuarios con el mismo id numérico, lo que indica ausencia de constraint
+  de unicidad en la capa de persistencia del servidor demo.
+
+HALLAZGO 4 - Inestabilidad del ambiente (API pública compartida):
+  Al ser una API de demostración pública, los datos pueden ser modificados
+  o eliminados por otros usuarios concurrentes. Esto generó fallos
+  intermitentes en la ejecución, especialmente en escenarios de búsqueda.
+  Solución aplicada: username único con sufijo de fecha para reducir colisiones.
+
+HALLAZGO 5 - DELETE retorna el username en el campo "message":
+  La respuesta de DELETE es: { "code": 200, "type": "unknown", "message": "qauser_karate_2026" }
+  Esto permite validar que se eliminó el usuario correcto usando el campo message.
+
+HALLAZGO 6 - GET de usuario inexistente retorna 404 correctamente:
+  Después de eliminar el usuario, GET /user/{username} retorna:
+    { "code": 1, "type": "error", "message": "User not found" }
+  Este comportamiento es correcto y cumple con el estándar REST.
+
+
+3. COBERTURA DE PRUEBAS
+------------------------
+
+  Escenario | Método | Endpoint              | Resultado | HTTP Status
+  ----------|--------|-----------------------|-----------|------------
+  1. Crear  | POST   | /user                 | PASS      | 200
+  2. Buscar | GET    | /user/{username}      | PASS      | 200
+  3. Actualizar | PUT | /user/{username}    | PASS      | 200
+  4. Verificar actualización | GET | /user/{username} | PASS | 200
+  5. Eliminar | DELETE | /user/{username}   | PASS      | 200
+  6. Confirmar eliminación | GET | /user/{username} | PASS | 404
+
+
+4. VENTAJAS DE KARATE DSL OBSERVADAS EN EL EJERCICIO
+------------------------------------------------------
+
+  + Sintaxis Gherkin (Given/When/Then) hace los tests legibles para
+    perfiles no técnicos (PO, BA, clientes).
+
+  + No requiere código Java para escribir pruebas; el .feature es suficiente
+    para la mayoría de casos REST.
+
+  + Las aserciones inline (match, contains) son muy expresivas y reducen
+    el código de validación versus frameworks como RestAssured.
+
+  + El Background permite reutilizar configuración (URL base, datos de prueba)
+    sin repetición en cada escenario.
+
+  + Genera reporte HTML profesional sin plugins adicionales.
+
+  + Variables dinámicas con #(variable) facilitan el manejo de datos
+    entre pasos dentro de un mismo escenario.
+
+
+5. DESVENTAJAS / LIMITACIONES OBSERVADAS
+------------------------------------------
+
+  - Los escenarios son independientes por diseño en Karate; para pasar
+    datos entre escenarios se requiere usar callonce o variables de sesión,
+    lo que agrega complejidad.
+
+  - Para pruebas que requieren autenticación OAuth2 compleja, la curva de
+    aprendizaje es mayor.
+
+  - El debugging puede ser menos intuitivo que en Postman para usuarios
+    no familiarizados con Maven/Java.
+
+
+6. COMPARATIVA CON POSTMAN (herramienta alternativa)
+------------------------------------------------------
+
+  CRITERIO              | KARATE DSL          | POSTMAN
+  ----------------------|---------------------|-------------------------
+  Curva de aprendizaje  | Media (requiere DSL)| Baja (interfaz gráfica)
+  Automatización CI/CD  | Excelente (Maven)   | Buena (Newman CLI)
+  Legibilidad           | Alta (Gherkin)      | Media (JS en Tests tab)
+  Reportes              | HTML integrado      | Requiere Newman HTML
+  Manejo de variables   | Nativo y robusto    | Ambientes y variables
+  Colaboración en equipo| Git (archivos texto)| Workspace compartido
+  Casos de datos (DDT)  | Muy fácil (Examples)| Requiere CSV/JSON + Runner
+  Instalación           | Java + Maven        | Aplicación de escritorio
+  Costo                 | Gratuito            | Freemium (límites en free)
+
+  RECOMENDACIÓN: Postman es ideal para exploración rápida y equipos
+  con perfiles mixtos. Karate es superior para proyectos que requieren
+  automatización robusta, integración con pipelines CI/CD y pruebas
+  orientadas a comportamiento (BDD).
+
+
+7. RECOMENDACIONES DE MEJORA
+------------------------------
+
+  1. Implementar datos de prueba dinámicos usando el timestamp del sistema
+     para evitar colisiones en ambientes compartidos.
+     Ejemplo: * def username = 'qauser_' + java.lang.System.currentTimeMillis()
+
+  2. Agregar pruebas negativas: usuario con campos vacíos, username duplicado,
+     actualización de usuario inexistente.
+
+  3. Separar los escenarios en múltiples features por responsabilidad
+     (crear.feature, actualizar.feature, etc.) para mejor mantenibilidad.
+
+  4. Integrar con GitHub Actions para ejecución automática en cada push.
+
+  5. Parametrizar el ambiente (dev/qa/prod) usando karate-config.js con
+     perfiles, permitiendo apuntar a diferentes instancias de la API.
+
+
+8. CONCLUSIÓN GENERAL
+----------------------
+El ejercicio permitió validar exitosamente el ciclo de vida completo de
+un usuario en la API de PetStore. Karate DSL demostró ser una herramienta
+potente y expresiva para pruebas de APIs REST, especialmente valorable en
+equipos que trabajan con metodologías ágiles y BDD. Los hallazgos encontrados
+(falta de validación de email, ausencia de unicidad en ID) son defectos reales
+que en un ambiente productivo deberían ser reportados y priorizados para corrección.
+
+===============================================================
