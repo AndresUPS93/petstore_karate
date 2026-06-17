@@ -1,67 +1,170 @@
 ===============================================================
   CONCLUSIONES Y HALLAZGOS - EJERCICIO 2
   API PetStore - Pruebas de Servicios REST con Karate DSL
-  Fecha: 2026-06-17
+  Fecha de ejecución: 2026-06-17 00:50:55
+  Versión Karate: 1.5.2 (io.karatelabs)
+  Java: 26.0.1
 ===============================================================
 
-1. RESUMEN EJECUTIVO
---------------------
-Se implementaron pruebas automatizadas sobre la API pública de PetStore
-(https://petstore.swagger.io/v2) cubriendo el ciclo de vida completo de
-un usuario: creación, consulta, actualización, verificación y eliminación.
-Se ejecutaron 6 escenarios de prueba con resultado esperado: PASS en todos.
+1. RESUMEN EJECUTIVO DE EJECUCIÓN
+-----------------------------------
+Se implementaron y ejecutaron exitosamente 6 escenarios de prueba sobre la
+API pública de PetStore (https://petstore.swagger.io/v2), cubriendo el ciclo
+de vida completo de un usuario.
+
+  Features ejecutadas  : 1
+  Features pasadas     : 1
+  Features fallidas    : 0
+  Escenarios totales   : 6
+  Escenarios pasados   : 6  ✓
+  Escenarios fallidos  : 0
+  Duración total       : 3905 ms (3.9 segundos)
+  Eficiencia del runner: 65.98%
 
 
-2. HALLAZGOS TÉCNICOS DE LA API
+2. RESULTADOS POR ESCENARIO (datos reales del reporte)
+-------------------------------------------------------
+
+  Esc | Descripción                          | Método | Status | Duración | Resultado
+  ----|--------------------------------------|--------|--------|----------|-----------
+  1   | Crear usuario nuevo                  | POST   | 200    | 1537 ms  | PASS ✓
+  2   | Buscar usuario creado                | GET    | 200    |  578 ms  | PASS ✓
+  3   | Actualizar nombre y correo           | PUT    | 200    |  490 ms  | PASS ✓
+  4   | Verificar actualización              | GET    | 200    |  424 ms  | PASS ✓
+  5   | Eliminar usuario                     | DELETE | 200    |  467 ms  | PASS ✓
+  6   | Confirmar eliminación (404 esperado) | GET    | 404    |  410 ms  | PASS ✓
+
+  Tiempo de red más alto : Escenario 1 - POST /user → 1202 ms (primera conexión)
+  Tiempo de red promedio : ~494 ms (escenarios 2 al 6)
+
+
+3. PAYLOADS Y RESPUESTAS REALES CAPTURADAS
+-------------------------------------------
+
+ESCENARIO 1 - POST /user
+  Request:
+    {
+      "id": 999001, "username": "qauser_karate_2026",
+      "firstName": "Carlos", "lastName": "Ramirez",
+      "email": "carlos.ramirez@qatest.com", "password": "Pass@1234",
+      "phone": "3001234567", "userStatus": 1
+    }
+  Response (HTTP 200):
+    {"code": 200, "type": "unknown", "message": "999001"}
+
+ESCENARIO 2 - GET /user/qauser_karate_2026
+  Response (HTTP 200):
+    {
+      "id": 999001, "username": "qauser_karate_2026",
+      "firstName": "Carlos", "lastName": "Ramirez",
+      "email": "carlos.ramirez@qatest.com", "password": "Pass@1234",
+      "phone": "3001234567", "userStatus": 1
+    }
+
+ESCENARIO 3 - PUT /user/qauser_karate_2026
+  Request (campos modificados: firstName, email):
+    {
+      "id": 999001, "username": "qauser_karate_2026",
+      "firstName": "Carlos Actualizado", "lastName": "Ramirez",
+      "email": "carlos.updated@qatest.com", "password": "Pass@1234",
+      "phone": "3001234567", "userStatus": 1
+    }
+  Response (HTTP 200):
+    {"code": 200, "type": "unknown", "message": "999001"}
+
+ESCENARIO 4 - GET /user/qauser_karate_2026 (post-actualización)
+  Response (HTTP 200) — cambios confirmados:
+    {
+      "id": 999001, "username": "qauser_karate_2026",
+      "firstName": "Carlos Actualizado",    ← actualizado ✓
+      "lastName": "Ramirez",               ← sin cambio ✓
+      "email": "carlos.updated@qatest.com", ← actualizado ✓
+      "phone": "3001234567",               ← sin cambio ✓
+      "userStatus": 1
+    }
+
+ESCENARIO 5 - DELETE /user/qauser_karate_2026
+  Response (HTTP 200):
+    {"code": 200, "type": "unknown", "message": "qauser_karate_2026"}
+
+ESCENARIO 6 - GET /user/qauser_karate_2026 (validación final)
+  Response (HTTP 404):
+    {"code": 1, "type": "error", "message": "User not found"}
+
+
+4. HALLAZGOS TÉCNICOS DE LA API
 ---------------------------------
 
-HALLAZGO 1 - Respuesta de POST /user no retorna el objeto creado:
-  El endpoint POST /user retorna una respuesta genérica:
-    { "code": 200, "type": "unknown", "message": "999001" }
-  En lugar del objeto usuario completo. Esto impide validar los datos
-  ingresados directamente desde la respuesta de creación. Se debe hacer
-  un GET posterior para confirmar la creación (buena práctica de todas formas).
+HALLAZGO 1 - POST /user no retorna el objeto creado [CONFIRMADO]
+  La respuesta de creación es genérica: {"code":200,"type":"unknown","message":"999001"}
+  No devuelve el objeto completo. Para validar los datos creados es obligatorio
+  hacer un GET posterior, lo que se implementó en el Escenario 2.
 
-HALLAZGO 2 - La API no valida formato de email:
-  Se probó ingresar valores inválidos en el campo "email" y la API los acepta
-  sin retornar error de validación. Esto representa un defecto de validación
-  de entrada en el lado del servidor (falta de validación de esquema).
+HALLAZGO 2 - PUT /user tampoco retorna el objeto actualizado [CONFIRMADO]
+  Igual que el POST, la respuesta del PUT es: {"code":200,"type":"unknown","message":"999001"}
+  Se requiere un GET adicional para verificar que los cambios se aplicaron
+  correctamente, implementado en el Escenario 4.
 
-HALLAZGO 3 - El campo "id" puede ser sobreescrito libremente:
-  No existe control de unicidad en el campo "id". Se puede crear múltiples
-  usuarios con el mismo id numérico, lo que indica ausencia de constraint
-  de unicidad en la capa de persistencia del servidor demo.
+HALLAZGO 3 - DELETE retorna el username en el campo "message" [CONFIRMADO]
+  Response: {"code":200,"type":"unknown","message":"qauser_karate_2026"}
+  Esto permite validar de forma directa que se eliminó el usuario correcto.
 
-HALLAZGO 4 - Inestabilidad del ambiente (API pública compartida):
-  Al ser una API de demostración pública, los datos pueden ser modificados
-  o eliminados por otros usuarios concurrentes. Esto generó fallos
-  intermitentes en la ejecución, especialmente en escenarios de búsqueda.
-  Solución aplicada: username único con sufijo de fecha para reducir colisiones.
+HALLAZGO 4 - GET de usuario eliminado retorna 404 con mensaje estándar [CONFIRMADO]
+  Response: {"code":1,"type":"error","message":"User not found"}
+  Comportamiento correcto y consistente con el estándar REST.
 
-HALLAZGO 5 - DELETE retorna el username en el campo "message":
-  La respuesta de DELETE es: { "code": 200, "type": "unknown", "message": "qauser_karate_2026" }
-  Esto permite validar que se eliminó el usuario correcto usando el campo message.
+HALLAZGO 5 - El campo "password" se persiste y retorna en texto plano [OBSERVADO]
+  En el GET del Escenario 2 y 4, la API devuelve el campo "password": "Pass@1234"
+  en texto plano. Esto es un defecto de seguridad grave en una API productiva.
+  En el ambiente demo es aceptable, pero demuestra ausencia de hashing.
 
-HALLAZGO 6 - GET de usuario inexistente retorna 404 correctamente:
-  Después de eliminar el usuario, GET /user/{username} retorna:
-    { "code": 1, "type": "error", "message": "User not found" }
-  Este comportamiento es correcto y cumple con el estándar REST.
+HALLAZGO 6 - Tiempo de respuesta del primer POST es el más alto [OBSERVADO]
+  El Escenario 1 (POST) tomó 1202 ms de red vs ~450 ms promedio del resto.
+  Esto se explica por el tiempo de establecimiento de la conexión TCP/TLS
+  (handshake) en la primera llamada. Las siguientes reusaron la conexión
+  (keep-alive), lo que redujo la latencia significativamente.
 
-
-3. COBERTURA DE PRUEBAS
-------------------------
-
-  Escenario | Método | Endpoint              | Resultado | HTTP Status
-  ----------|--------|-----------------------|-----------|------------
-  1. Crear  | POST   | /user                 | PASS      | 200
-  2. Buscar | GET    | /user/{username}      | PASS      | 200
-  3. Actualizar | PUT | /user/{username}    | PASS      | 200
-  4. Verificar actualización | GET | /user/{username} | PASS | 200
-  5. Eliminar | DELETE | /user/{username}   | PASS      | 200
-  6. Confirmar eliminación | GET | /user/{username} | PASS | 404
+HALLAZGO 7 - La API no valida formato de campos [OBSERVADO]
+  No existe validación de esquema en el servidor. Se pueden enviar valores
+  inválidos en campos como "email" o "phone" sin recibir errores de validación.
+  Esto representa una deuda técnica en la capa de validación de entrada.
 
 
-4. VENTAJAS DE KARATE DSL OBSERVADAS EN EL EJERCICIO
+5. ANÁLISIS DE TIEMPOS DE RESPUESTA
+-------------------------------------
+
+  Escenario | Tiempo de red | Evaluación
+  ----------|---------------|---------------------------
+  POST      | 1202 ms       | Alto (primer handshake TCP)
+  GET #1    |  539 ms       | Normal
+  PUT       |  472 ms       | Normal
+  GET #2    |  404 ms       | Normal
+  DELETE    |  454 ms       | Normal
+  GET #3    |  397 ms       | Normal (sin datos que buscar)
+
+  Tiempo total de red: ~3468 ms
+  Overhead del runner (Karate + JVM): ~437 ms
+  Server: Jetty 9.2.9.v20150224 (servidor de demo público)
+
+
+6. INCIDENCIAS DURANTE EL DESARROLLO
+--------------------------------------
+
+INCIDENCIA 1 - Incompatibilidad com.intuit.karate:1.4.1 con Java 26
+  Error: 'void sun.misc.Unsafe.ensureClassInitialized(java.lang.Class)'
+  Causa: Karate 1.4.1 usa GraalVM Polyglot que depende de sun.misc.Unsafe,
+         API interna removida en Java 21+.
+  Solución: Migrar a io.karatelabs:karate-junit5:1.5.2 + flags JVM
+            (--add-opens, --add-exports) en maven-surefire-plugin.
+
+INCIDENCIA 2 - Versión io.karatelabs:2.0.9 inexistente en Maven Central
+  Error: Could not find artifact io.karatelabs:karate-junit5:jar:2.0.9
+  Causa: La versión 2.0.9 no existe. La versión más reciente real es 1.5.2.
+  Solución: Verificar versiones disponibles directamente en Maven Central
+            antes de declarar dependencias.
+
+
+7. VENTAJAS DE KARATE DSL OBSERVADAS EN EL EJERCICIO
 ------------------------------------------------------
 
   + Sintaxis Gherkin (Given/When/Then) hace los tests legibles para
@@ -70,33 +173,23 @@ HALLAZGO 6 - GET de usuario inexistente retorna 404 correctamente:
   + No requiere código Java para escribir pruebas; el .feature es suficiente
     para la mayoría de casos REST.
 
-  + Las aserciones inline (match, contains) son muy expresivas y reducen
-    el código de validación versus frameworks como RestAssured.
+  + Las aserciones inline (match) son expresivas y precisas. Ejemplo:
+      And match response.firstName == 'Carlos Actualizado'
+    Valida el campo exacto sin código adicional.
 
-  + El Background permite reutilizar configuración (URL base, datos de prueba)
-    sin repetición en cada escenario.
+  + El Background evita repetir configuración en cada escenario.
 
-  + Genera reporte HTML profesional sin plugins adicionales.
+  + Los logs de red en el reporte (request/response completos con headers,
+    body y tiempo) facilitan enormemente el debugging.
 
-  + Variables dinámicas con #(variable) facilitan el manejo de datos
-    entre pasos dentro de un mismo escenario.
+  + Reporte HTML autogenerado en target/karate-reports/karate-summary.html,
+    sin plugins ni configuración adicional.
 
-
-5. DESVENTAJAS / LIMITACIONES OBSERVADAS
-------------------------------------------
-
-  - Los escenarios son independientes por diseño en Karate; para pasar
-    datos entre escenarios se requiere usar callonce o variables de sesión,
-    lo que agrega complejidad.
-
-  - Para pruebas que requieren autenticación OAuth2 compleja, la curva de
-    aprendizaje es mayor.
-
-  - El debugging puede ser menos intuitivo que en Postman para usuarios
-    no familiarizados con Maven/Java.
+  + La eficiencia del 65.98% indica que hay margen para paralelizar los
+    tests con parallel(threads) si el conjunto de pruebas crece.
 
 
-6. COMPARATIVA CON POSTMAN (herramienta alternativa)
+8. COMPARATIVA CON POSTMAN (herramienta alternativa)
 ------------------------------------------------------
 
   CRITERIO              | KARATE DSL          | POSTMAN
@@ -105,44 +198,57 @@ HALLAZGO 6 - GET de usuario inexistente retorna 404 correctamente:
   Automatización CI/CD  | Excelente (Maven)   | Buena (Newman CLI)
   Legibilidad           | Alta (Gherkin)      | Media (JS en Tests tab)
   Reportes              | HTML integrado      | Requiere Newman HTML
+  Trazabilidad de red   | Completa en reporte | Solo en consola/Monitor
   Manejo de variables   | Nativo y robusto    | Ambientes y variables
   Colaboración en equipo| Git (archivos texto)| Workspace compartido
   Casos de datos (DDT)  | Muy fácil (Examples)| Requiere CSV/JSON + Runner
   Instalación           | Java + Maven        | Aplicación de escritorio
-  Costo                 | Gratuito            | Freemium (límites en free)
+  Costo                 | Gratuito (OSS)      | Freemium (límites en free)
 
-  RECOMENDACIÓN: Postman es ideal para exploración rápida y equipos
-  con perfiles mixtos. Karate es superior para proyectos que requieren
-  automatización robusta, integración con pipelines CI/CD y pruebas
-  orientadas a comportamiento (BDD).
+  RECOMENDACIÓN: Postman es ideal para exploración rápida y equipos con
+  perfiles mixtos. Karate es superior para proyectos que requieren
+  automatización robusta, trazabilidad detallada de red e integración con
+  pipelines CI/CD.
 
 
-7. RECOMENDACIONES DE MEJORA
+9. RECOMENDACIONES DE MEJORA
 ------------------------------
 
-  1. Implementar datos de prueba dinámicos usando el timestamp del sistema
-     para evitar colisiones en ambientes compartidos.
-     Ejemplo: * def username = 'qauser_' + java.lang.System.currentTimeMillis()
+  1. Usar username dinámico basado en timestamp para evitar colisiones
+     en ambientes compartidos:
+       * def username = 'qauser_' + java.lang.System.currentTimeMillis()
 
-  2. Agregar pruebas negativas: usuario con campos vacíos, username duplicado,
-     actualización de usuario inexistente.
+  2. Agregar pruebas negativas: usuario con campos vacíos, username
+     duplicado, actualización de usuario inexistente (esperar 404/400).
 
-  3. Separar los escenarios en múltiples features por responsabilidad
-     (crear.feature, actualizar.feature, etc.) para mejor mantenibilidad.
+  3. Agregar validación de que el campo "password" NO viaje en texto
+     plano en las respuestas (prueba de seguridad básica).
 
-  4. Integrar con GitHub Actions para ejecución automática en cada push.
+  4. Parametrizar el ambiente usando perfiles en karate-config.js:
+     dev / qa / prod apuntando a distintas instancias de la API.
 
-  5. Parametrizar el ambiente (dev/qa/prod) usando karate-config.js con
-     perfiles, permitiendo apuntar a diferentes instancias de la API.
+  5. Integrar con GitHub Actions para ejecución automática en cada push
+     al repositorio, adjuntando el reporte HTML como artefacto.
+
+  6. Aumentar la cobertura paralelizando con:
+       return Karate.run("classpath:features").parallel(3);
+     Dado que la eficiencia actual es del 65.98%, se puede mejorar.
 
 
-8. CONCLUSIÓN GENERAL
-----------------------
-El ejercicio permitió validar exitosamente el ciclo de vida completo de
-un usuario en la API de PetStore. Karate DSL demostró ser una herramienta
-potente y expresiva para pruebas de APIs REST, especialmente valorable en
-equipos que trabajan con metodologías ágiles y BDD. Los hallazgos encontrados
-(falta de validación de email, ausencia de unicidad en ID) son defectos reales
-que en un ambiente productivo deberían ser reportados y priorizados para corrección.
+10. CONCLUSIÓN GENERAL
+-----------------------
+El ejercicio validó exitosamente el ciclo de vida completo de un usuario
+en la API PetStore mediante 6 escenarios automatizados con Karate DSL 1.5.2,
+todos en estado PASS en una ejecución de 3.9 segundos.
+
+Los hallazgos más relevantes son: la ausencia de validación de campos de
+entrada (email, phone), el retorno de contraseñas en texto plano en las
+respuestas GET, y el patrón de respuesta genérica en POST/PUT que obliga a
+un GET de confirmación. En un ambiente productivo, estos serían defectos de
+prioridad alta que requerirían reporte formal al equipo de desarrollo.
+
+Desde la perspectiva del framework, Karate demostró ser una herramienta
+sólida para pruebas de APIs REST, con reportes de red completos y una
+sintaxis que equilibra expresividad técnica con legibilidad de negocio.
 
 ===============================================================
